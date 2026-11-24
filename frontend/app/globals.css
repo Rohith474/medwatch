@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+:root {
+  --navy: #001a40;
+  --navy-mid: #003580;
+  --navy-light: #0051a2;
+}
+
+/* ═══════════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════════ */
+@keyframes floating-pill {
+  0%, 100% { transform: translateY(0px) rotate(-5deg); }
+  50% { transform: translateY(-20px) rotate(5deg); }
+}
+@keyframes floating-pill-delay {
+  0%, 100% { transform: translateY(0px) rotate(8deg); }
+  50% { transform: translateY(-15px) rotate(-3deg); }
+}
+@keyframes floating-pill-delay2 {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-25px) rotate(10deg); }
+}
+@keyframes scan-line-anim {
+  0% { top: 0%; }
+  100% { top: 100%; }
+}
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes stamp-reveal {
+  0% { transform: scale(2) rotate(-15deg); opacity: 0; }
+  60% { transform: scale(0.9) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0,100,255,0.3); }
+  50% { box-shadow: 0 0 40px rgba(0,100,255,0.6), 0 0 80px rgba(0,100,255,0.2); }
+}
+
+/* ═══════════════════════════════════════════
+   UTILITY CLASSES
+═══════════════════════════════════════════ */
+.floating-pill { animation: floating-pill 4s ease-in-out infinite; }
+.floating-pill-delay { animation: floating-pill-delay 5s ease-in-out infinite; }
+.floating-pill-delay2 { animation: floating-pill-delay2 6s ease-in-out infinite; }
+
+.scan-line {
+  position: absolute;
+  left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #00ffff, transparent);
+  animation: scan-line-anim 1.8s linear infinite;
+  box-shadow: 0 0 12px #00ffff;
+}
+
+.ticker-track { animation: ticker-scroll 30s linear infinite; }
+.ticker-track:hover { animation-play-state: paused; }
+
+.stamp-animate { animation: stamp-reveal 0.5s cubic-bezier(0.68,-0.55,0.265,1.55) forwards; }
+
+.shimmer-bg {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.fade-in-up { animation: fadeInUp 0.5s ease-out forwards; }
+
+.terminal-glow { animation: glow-pulse 3s ease-in-out infinite; }
+
+/* ═══════════════════════════════════════════
+   MEDICINE BOX (the creative card component)
+═══════════════════════════════════════════ */
+.medicine-box {
+  background: white;
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.medicine-box::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ef4444, #f97316, #ef4444);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+.medicine-box:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(239,68,68,0.15);
+  border-color: #ef4444;
+}
+
+/* ═══════════════════════════════════════════
+   PILL BUTTON
+═══════════════════════════════════════════ */
+.pill-btn {
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+}
+.pill-btn:hover { transform: translateY(-1px); }
+.pill-btn:active { transform: translateY(0); }
+
+/* ═══════════════════════════════════════════
+   RESULT BADGES
+═══════════════════════════════════════════ */
+.nsq-badge {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+  border: 1px solid #ef4444;
+}
+.safe-badge {
+  background: linear-gradient(135deg, #064e3b, #065f46);
+  border: 1px solid #10b981;
+}
+.warning-badge {
+  background: linear-gradient(135deg, #78350f, #92400e);
+  border: 1px solid #f59e0b;
+}
+
+/* ═══════════════════════════════════════════
+   STAT CARD
+═══════════════════════════════════════════ */
+.stat-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+}
+.stat-card:hover {
+  background: rgba(255,255,255,0.1);
+  transform: translateY(-4px);
+}
+
+/* ═══════════════════════════════════════════
+   TERMINAL / SCAN WINDOW
+═══════════════════════════════════════════ */
+.scan-window {
+  background: #0a0a0a;
+  border: 2px solid rgba(0,255,255,0.3);
+  border-radius: 16px;
+  font-family: 'Courier New', monospace;
+}
+
+/* ═══════════════════════════════════════════
+   PILL CAPSULE SVG-LIKE
+═══════════════════════════════════════════ */
+.pill-capsule {
+  display: inline-flex;
+  overflow: hidden;
+  border-radius: 9999px;
+  border: 3px solid currentColor;
+}
+.pill-capsule-left { width: 50%; }
+.pill-capsule-right { width: 50%; background: transparent; }
+
+/* ═══════════════════════════════════════════
+   GOVT DOCUMENT / GAZETTE STYLE
+═══════════════════════════════════════════ */
+.gazette-card {
+  background: linear-gradient(135deg, #fefce8 0%, #fff 50%, #fefce8 100%);
+  border: 1px solid #d97706;
+  border-left: 6px solid #d97706;
+  border-radius: 8px;
+}
+
+/* ═══════════════════════════════════════════
+   GLOBAL BASE
+═══════════════════════════════════════════ */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+input:focus, textarea:focus {
+  outline: none;
+}
