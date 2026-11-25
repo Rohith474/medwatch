@@ -63,28 +63,39 @@ export default function CameraScanner({ onDetected, onClose }: CameraScannerProp
     const html5Qr = new Html5Qrcode(containerId);
     scannerRef.current = html5Qr;
 
-    html5Qr
-      .start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 160 } },
-        async (decodedText) => {
-          if (!mounted) return;
-          await stopCamera();
-          onDetected(parseScannedCode(decodedText));
-        },
-        () => {
-          // ignore per-frame decode misses
-        }
-      )
-      .then(() => {
+    const scanConfig = { fps: 10, qrbox: { width: 250, height: 160 } };
+    const onSuccess = async (decodedText: string) => {
+      if (!mounted) return;
+      await stopCamera();
+      onDetected(parseScannedCode(decodedText));
+    };
+
+    const startWithFallback = async () => {
+      try {
+        await html5Qr.start({ facingMode: 'environment' }, scanConfig, onSuccess, () => {});
         startedRef.current = true;
         if (mounted) setScanning(true);
-      })
-      .catch(() => {
-        if (mounted) {
-          setCamError('Camera not available or permission denied. You can still upload a barcode/QR image below.');
+      } catch {
+        try {
+          const cameras = await Html5Qrcode.getCameras();
+          if (cameras && cameras.length > 0) {
+            await html5Qr.start(cameras[0].id, scanConfig, onSuccess, () => {});
+            startedRef.current = true;
+            if (mounted) setScanning(true);
+            return;
+          }
+          if (mounted) {
+            setCamError('No camera found. You can still upload a barcode/QR image below.');
+          }
+        } catch {
+          if (mounted) {
+            setCamError('Camera not available or permission denied. You can still upload a barcode/QR image below.');
+          }
         }
-      });
+      }
+    };
+
+    startWithFallback();
 
     return () => {
       mounted = false;
