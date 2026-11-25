@@ -56,11 +56,13 @@ export default function SuperAdminDashboard() {
         )}
 
         {/* Quick links */}
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
+            { href: '/staff/drugs', icon: '💊', title: 'Manage Drug List', desc: 'View, search, toggle, or delete all drug records', color: 'border-indigo-200 hover:border-indigo-400' },
+            { href: '/staff/manage', icon: '👥', title: 'Manage & Verify Staff', desc: `${stats?.total_staff ?? '...'} staff accounts (verify, add, delete)`, color: 'border-purple-200 hover:border-purple-400' },
             { href: '/staff/approve', icon: '✅', title: 'Review Pending Records', desc: `${stats?.pending_approvals ?? '...'} records awaiting approval`, color: 'border-orange-200 hover:border-orange-400' },
             { href: '/staff/upload', icon: '📦', title: 'Add Drug Record', desc: 'Manually enter a new NSQ/spurious alert', color: 'border-blue-200 hover:border-blue-400' },
-            { href: '/staff/regulations', icon: '📋', title: 'Manage Regulations', desc: 'Publish or update gazette circulars', color: 'border-amber-200 hover:border-amber-400' },
+            { href: '/staff/regulations', icon: '📋', title: 'Manage Regulations', desc: 'Publish or delete gazette circulars', color: 'border-amber-200 hover:border-amber-400' },
             { href: '/staff/notifications', icon: '🔔', title: 'Send Alert Notification', desc: 'Push CRITICAL/STANDARD/ADVISORY alerts', color: 'border-red-200 hover:border-red-400' },
           ].map(card => (
             <a key={card.href} href={card.href} className={`bg-white border-2 ${card.color} rounded-2xl p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-all group`}>

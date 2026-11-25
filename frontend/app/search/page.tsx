@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { searchDrug, SearchResult } from '@/lib/api';
 import Link from 'next/link';
+import CameraScanner from '@/components/CameraScanner';
 
 const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string; bg: string; border: string; badgeClass: string; severity: string }> = {
   NSQ_FOUND: {
@@ -192,10 +193,10 @@ export default function SearchPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<SearchResult | null>(null);
   const [error, setError] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!batch.trim() && !drug.trim()) {
+  const runSearch = async (b: string, d: string) => {
+    if (!b.trim() && !d.trim()) {
       setError('Please enter at least a batch number or drug name.');
       return;
     }
@@ -203,13 +204,18 @@ export default function SearchPage() {
     setError('');
     setResult(null);
     try {
-      const res = await searchDrug(batch.trim(), drug.trim());
+      const res = await searchDrug(b.trim(), d.trim());
       setResult(res);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to connect to server. Is the backend running?');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await runSearch(batch, drug);
   };
 
   return (
@@ -299,22 +305,36 @@ export default function SearchPage() {
                 </div>
               )}
 
-              {/* Scan barcode placeholder */}
+              {/* Live Camera QR / Barcode Scanner */}
               <div className="flex items-center gap-3">
                 <div className="flex-1 h-px bg-white/10"></div>
                 <span className="text-blue-400 text-xs font-mono">or</span>
                 <div className="flex-1 h-px bg-white/10"></div>
               </div>
 
-              <button
-                type="button"
-                className="w-full border-2 border-dashed border-cyan-700 hover:border-cyan-500 rounded-2xl py-5 text-cyan-400 hover:text-cyan-300 font-semibold text-sm flex flex-col items-center gap-2 transition-all group"
-                onClick={() => alert('QR/Barcode scanner — camera access will be enabled in mobile app')}
-              >
-                <div className="text-3xl group-hover:scale-110 transition-transform">📷</div>
-                <div>Scan Barcode / QR Code</div>
-                <div className="text-xs opacity-60 font-normal">Camera scanner available on mobile app</div>
-              </button>
+              {showScanner ? (
+                <CameraScanner
+                  onDetected={async ({ batch: scannedBatch, drug: scannedDrug }) => {
+                    const nextBatch = scannedBatch || '';
+                    const nextDrug = scannedDrug || '';
+                    setBatch(nextBatch);
+                    setDrug(nextDrug);
+                    setShowScanner(false);
+                    await runSearch(nextBatch, nextDrug);
+                  }}
+                  onClose={() => setShowScanner(false)}
+                />
+              ) : (
+                <button
+                  type="button"
+                  className="w-full border-2 border-dashed border-cyan-700 hover:border-cyan-500 rounded-2xl py-5 text-cyan-400 hover:text-cyan-300 font-semibold text-sm flex flex-col items-center gap-2 transition-all group cursor-pointer"
+                  onClick={() => setShowScanner(true)}
+                >
+                  <div className="text-3xl group-hover:scale-110 transition-transform">📷</div>
+                  <div>Scan Barcode / QR Code with Camera</div>
+                  <div className="text-xs opacity-60 font-normal">Supports live camera &amp; image file upload</div>
+                </button>
+              )}
 
               <button
                 type="submit"

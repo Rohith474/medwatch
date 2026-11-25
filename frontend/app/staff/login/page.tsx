@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { staffLogin, saveSession } from '@/lib/staff-api';
 
 const ROLE_COLORS: Record<string, string> = {
@@ -15,6 +16,12 @@ const ROLE_LABELS: Record<string, string> = {
   UPLOADER: 'Data Uploader',
   DEPT_OFFICER: 'Department Officer',
 };
+const ROLE_DEMO: Record<string, { mobile: string; password: string }> = {
+  SUPER_ADMIN: { mobile: '9000000001', password: 'SuperAdmin@2024' },
+  APPROVER: { mobile: '9000000002', password: 'Approver@2024' },
+  UPLOADER: { mobile: '9000000003', password: 'Uploader@2024' },
+  DEPT_OFFICER: { mobile: '9000000004', password: 'DeptOfficer@2024' },
+};
 const ROLE_REDIRECT: Record<string, string> = {
   SUPER_ADMIN: '/staff/dashboard',
   APPROVER: '/staff/approve',
@@ -25,9 +32,20 @@ const ROLE_REDIRECT: Record<string, string> = {
 export default function StaffLoginPage() {
   const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedRole, setSelectedRole] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+
+  const handleSelectRole = (role: string) => {
+    setSelectedRole(role);
+    setError('');
+    const demo = ROLE_DEMO[role];
+    if (demo) {
+      setMobile(demo.mobile);
+      setPassword(demo.password);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,20 +158,44 @@ export default function StaffLoginPage() {
               </button>
             </form>
 
-            {/* Role hints */}
+            {/* Interactive Role Selector */}
             <div className="mt-6 pt-5 border-t border-white/10">
-              <div className="text-xs text-blue-400 mb-3 font-semibold text-center tracking-wide">STAFF ROLES</div>
-              <div className="grid grid-cols-2 gap-2">
-                {Object.entries(ROLE_LABELS).map(([role, label]) => (
-                  <div
-                    key={role}
-                    className="text-center rounded-xl px-2 py-2 text-xs font-semibold"
-                    style={{ background: ROLE_COLORS[role] + '20', border: `1px solid ${ROLE_COLORS[role]}40`, color: ROLE_COLORS[role] }}
-                  >
-                    {label}
-                  </div>
-                ))}
+              <div className="text-xs text-blue-400 mb-3 font-semibold text-center tracking-wide">
+                SELECT ROLE (QUICK FILL DEMO)
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(ROLE_LABELS).map(([role, label]) => {
+                  const isSelected = selectedRole === role;
+                  return (
+                    <button
+                      key={role}
+                      type="button"
+                      onClick={() => handleSelectRole(role)}
+                      className={`text-center rounded-xl px-2 py-2.5 text-xs font-semibold transition-all cursor-pointer ${
+                        isSelected ? 'ring-2 ring-white scale-[1.02] shadow-md' : 'opacity-80 hover:opacity-100'
+                      }`}
+                      style={{
+                        background: isSelected ? ROLE_COLORS[role] + '45' : ROLE_COLORS[role] + '20',
+                        border: `1px solid ${isSelected ? ROLE_COLORS[role] : ROLE_COLORS[role] + '40'}`,
+                        color: isSelected ? '#ffffff' : ROLE_COLORS[role],
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Link to Registration */}
+            <div className="mt-5 pt-4 border-t border-white/10 text-center">
+              <p className="text-xs text-blue-300 mb-2">New department official or inspector?</p>
+              <Link
+                href="/staff/register"
+                className="inline-block w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 border border-cyan-400/30 text-cyan-300 text-xs font-bold transition-all"
+              >
+                📝 Apply for Staff Access / Register Here →
+              </Link>
             </div>
           </div>
         </div>

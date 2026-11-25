@@ -149,6 +149,23 @@ export default function ManageStaffPage() {
     } finally { setActing(null); }
   };
 
+  const handleDelete = async (id: number, name: string) => {
+    if (!confirm(`Delete staff account for "${name}"? This cannot be undone.`)) return;
+    setActing(id);
+    setMsg('');
+    try {
+      const res = await fetch(`${API}/auth/staff/manage/${id}/`, {
+        method: 'DELETE', headers: authHeaders(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to delete');
+      setMsg(`✅ ${data.message}`);
+      fetchStaff();
+    } catch (e: unknown) {
+      setMsg(`❌ ${e instanceof Error ? e.message : 'Error'}`);
+    } finally { setActing(null); }
+  };
+
   const roleCfg = ROLE_CREDENTIALS[form.role];
   const requiredFields = roleCfg?.required_fields || [];
 
@@ -332,6 +349,16 @@ export default function ManageStaffPage() {
                         className="pill-btn bg-red-100 hover:bg-red-200 text-red-700 border border-red-300 px-4 py-2 text-xs font-bold disabled:opacity-50"
                       >
                         {acting === s.id ? '...' : '🚫 Suspend'}
+                      </button>
+                    )}
+                    {s.mobile !== user.mobile && (
+                      <button
+                        onClick={() => handleDelete(s.id, s.name)}
+                        disabled={acting === s.id}
+                        className="pill-btn bg-gray-100 hover:bg-red-600 hover:text-white text-gray-700 border border-gray-300 px-3 py-2 text-xs font-bold disabled:opacity-50 transition-colors"
+                        title="Delete staff account"
+                      >
+                        🗑️ Delete
                       </button>
                     )}
                   </div>

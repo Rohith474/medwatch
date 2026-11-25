@@ -149,3 +149,14 @@ MSG91_TEMPLATE_ID = config('MSG91_TEMPLATE_ID', default='')
 
 # Firebase
 FIREBASE_SERVER_KEY = config('FIREBASE_SERVER_KEY', default='')
+
+# Web Push (VAPID — 100% Free Browser & Android Push)
+VAPID_PUBLIC_KEY = config(
+    'VAPID_PUBLIC_KEY',
+    default='BKnFFdF4N28wROZ1rTl6bwH9qFzUSFGkqz_0IWtUGnZXSeiEAsf5qSRDhM1A0_fF0D_JotysM-bSu6o9ZnwMXPg',
+)
+VAPID_PRIVATE_KEY = config(
+    'VAPID_PRIVATE_KEY',
+    default='LVO8Hj5VSNFm1WPPi4rJHKxoOVefs_QB7MvgSstLb-M',
+)
+VAPID_ADMIN_EMAIL = config('VAPID_ADMIN_EMAIL', default='mailto:alerts@medwatch.kerala.gov.in')

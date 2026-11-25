@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
+import EnableAlertsButton from './EnableAlertsButton';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -36,6 +37,7 @@ export default function Navbar() {
             Live Alerts
           </Link>
           <Link href="/regulations" className="hover:text-blue-300 transition-colors">Regulations</Link>
+          <EnableAlertsButton compact />
           <Link
             href="/search"
             className="pill-btn bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white px-5 py-2 text-sm font-bold shadow-lg shadow-blue-500/30 transition-all"

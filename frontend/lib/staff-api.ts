@@ -56,6 +56,17 @@ export async function staffLogin(mobile: string, password: string): Promise<{ us
   return data;
 }
 
+export async function registerStaff(payload: Record<string, string>): Promise<{ message: string; profile_id: number }> {
+  const res = await fetch(`${API}/auth/staff/register/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Registration failed');
+  return data;
+}
+
 interface SessionSnapshot {
   ready: boolean;
   raw: string | null | undefined;
@@ -244,5 +255,97 @@ export async function sendNotification(payload: Record<string, string>): Promise
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to send notification');
+  return data;
+}
+
+// ── Super Admin Full List Management (Drugs, Staff, Regulations) ─────────────
+
+export interface AdminDrugRecord {
+  id: number;
+  brand_name: string;
+  generic_name: string;
+  manufacturer: string;
+  batch_no: string;
+  result_type: string;
+  lab: string;
+  test_date: string;
+  action_taken: string;
+  source: string;
+  is_active: boolean;
+}
+
+export async function getAllDrugsAdmin(q = ''): Promise<AdminDrugRecord[]> {
+  const url = q ? `${API}/auth/staff/drugs/?q=${encodeURIComponent(q)}` : `${API}/auth/staff/drugs/`;
+  const res = await fetch(url, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch drug records');
+  return res.json();
+}
+
+export async function toggleDrugStatus(id: number, isActive: boolean): Promise<{ message: string; is_active: boolean }> {
+  const res = await fetch(`${API}/auth/staff/drugs/${id}/`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ is_active: isActive }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update record');
+  return data;
+}
+
+export async function deleteDrugRecord(id: number): Promise<{ message: string }> {
+  const res = await fetch(`${API}/auth/staff/drugs/${id}/`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete record');
+  return data;
+}
+
+export async function deleteStaffMember(profileId: number): Promise<{ message: string }> {
+  const res = await fetch(`${API}/auth/staff/manage/${profileId}/`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete staff member');
+  return data;
+}
+
+export async function deleteRegulation(id: number): Promise<{ message: string }> {
+  const res = await fetch(`${API}/auth/staff/regulations/${id}/`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete regulation');
+  return data;
+}
+
+// ── CDSCO PDF Ingestion (Phase 4) ─────────────────────────────────────────────
+
+export interface CDSCOImportResult {
+  message: string;
+  imported_count: number;
+  skipped_count: number;
+  records: {
+    id: number;
+    brand_name: string;
+    batch_no: string;
+    manufacturer: string;
+    result_type: string;
+    test_date: string;
+  }[];
+}
+
+export async function importCDSCOPdf(formData: FormData): Promise<CDSCOImportResult> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('staff_token') || '' : '';
+  const res = await fetch(`${API}/auth/staff/cdsco-import/`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to import PDF');
   return data;
 }

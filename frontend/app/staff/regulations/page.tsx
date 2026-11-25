@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import StaffLayout, { StaffRedirect } from '@/components/StaffLayout';
-import { getRegulationsStaff, addRegulation, useStaffSession } from '@/lib/staff-api';
+import { getRegulationsStaff, addRegulation, deleteRegulation, useStaffSession } from '@/lib/staff-api';
 
 export default function RegulationsPage() {
   const { ready, user } = useStaffSession();
@@ -104,13 +104,30 @@ export default function RegulationsPage() {
           {regulations.length === 0 ? (
             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-8 text-center text-gray-400 text-sm">No regulations published yet.</div>
           ) : regulations.map(reg => (
-            <div key={reg.id} className="bg-white border border-amber-200 border-l-4 border-l-amber-500 rounded-xl p-5">
-              <div className="font-bold text-gray-800 mb-1">{reg.title}</div>
-              <div className="text-gray-500 text-sm mb-2 line-clamp-2">{reg.description}</div>
-              <div className="flex gap-4 text-xs text-gray-400 font-mono">
-                <span>🏛️ {reg.issued_by}</span>
-                <span>📅 {reg.issued_on}</span>
+            <div key={reg.id} className="bg-white border border-amber-200 border-l-4 border-l-amber-500 rounded-xl p-5 flex items-start justify-between gap-4">
+              <div>
+                <div className="font-bold text-gray-800 mb-1">{reg.title}</div>
+                <div className="text-gray-500 text-sm mb-2 line-clamp-2">{reg.description}</div>
+                <div className="flex gap-4 text-xs text-gray-400 font-mono">
+                  <span>🏛️ {reg.issued_by}</span>
+                  <span>📅 {reg.issued_on}</span>
+                </div>
               </div>
+              <button
+                onClick={async () => {
+                  if (!confirm(`Delete regulation "${reg.title}"?`)) return;
+                  try {
+                    const res = await deleteRegulation(reg.id);
+                    setMsg(`✅ ${res.message}`);
+                    fetchRegs();
+                  } catch (e: unknown) {
+                    setMsg(`❌ ${e instanceof Error ? e.message : 'Error'}`);
+                  }
+                }}
+                className="pill-btn bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border border-red-200 px-3 py-1.5 text-xs font-bold flex-shrink-0 transition-colors"
+              >
+                🗑️ Delete
+              </button>
             </div>
           ))}
         </div>

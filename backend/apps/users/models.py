@@ -3,11 +3,14 @@ from django.db import models
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, mobile, name, **extra_fields):
+    def create_user(self, mobile, name, password=None, **extra_fields):
         if not mobile:
             raise ValueError('Mobile number is required')
         user = self.model(mobile=mobile, name=name, **extra_fields)
-        user.set_unusable_password()
+        if password:
+            user.set_password(password)
+        else:
+            user.set_unusable_password()
         user.save(using=self._db)
         return user
 

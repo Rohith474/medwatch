@@ -309,6 +309,21 @@ class StaffAddRegulationView(APIView):
         )
         return Response({'message': 'Regulation published.', 'id': reg.id}, status=201)
 
+    def delete(self, request, pk=None):
+        from apps.regulations.models import Regulation
+        try:
+            role = request.user.admin_profile.role
+        except Exception:
+            role = 'SUPER_ADMIN' if request.user.is_superuser else None
+        if role not in ('SUPER_ADMIN', 'DEPT_OFFICER'):
+            return Response({'error': 'Permission denied.'}, status=403)
+        try:
+            reg = Regulation.objects.get(pk=pk)
+        except Regulation.DoesNotExist:
+            return Response({'error': 'Regulation not found.'}, status=404)
+        reg.delete()
+        return Response({'message': 'Regulation deleted.'})
+
 
 class StaffDashboardStatsView(APIView):
     """Super Admin: dashboard stats."""
@@ -546,5 +561,245 @@ class StaffSendNotificationView(APIView):
             is_sent=True,
             sent_at=timezone.now(),
         )
-        return Response({'message': 'Notification sent.', 'id': notif.id}, status=201)
+        from apps.notifications.push_service import send_web_push_to_all
+        push_stats = send_web_push_to_all(notif)
+        return Response({
+            'message': f'Notification sent! Pushed to {push_stats["sent"]} subscribed device(s).',
+            'id': notif.id,
+            'push_stats': push_stats,
+        }, status=201)
+
+
+class StaffRegisterView(APIView):
+    """Public staff application endpoint.
+    - APPROVER / UPLOADER / DEPT_OFFICER start unverified until Super Admin approves.
+    - SUPER_ADMIN requires the Department Master Authorization Code to register with full control.
+    """
+    permission_classes = [AllowAny]
+
+    ALLOWED_ROLES = ('SUPER_ADMIN', 'APPROVER', 'UPLOADER', 'DEPT_OFFICER')
+
+    def post(self, request):
+        d = request.data
+        mobile = d.get('mobile', '').strip()
+        name = d.get('name', '').strip()
+        password = d.get('password', '').strip()
+        role = d.get('role', '').strip()
+
+        if not all([mobile, name, password, role]):
+            return Response({'error': 'Name, mobile, password, and role are required.'}, status=400)
+
+        if len(mobile) < 10:
+            return Response({'error': 'Please enter a valid 10-digit mobile number.'}, status=400)
+
+        if len(password) < 8:
+            return Response({'error': 'Password must be at least 8 characters.'}, status=400)
+
+        if role not in self.ALLOWED_ROLES:
+            return Response({
+                'error': f'Invalid role for registration. Choose from: {", ".join(self.ALLOWED_ROLES)}'
+            }, status=400)
+
+        is_super = (role == 'SUPER_ADMIN')
+        if is_super:
+            expected_code = getattr(settings, 'SUPER_ADMIN_AUTH_CODE', 'KDC-ADMIN-2024')
+            provided_code = d.get('admin_auth_code', '').strip()
+            if provided_code != expected_code:
+                return Response({
+                    'error': 'Invalid Super Admin Authorization Code. Contact the Kerala Drug Control IT Wing.'
+                }, status=403)
+
+        if User.objects.filter(mobile=mobile).exists():
+            return Response({'error': 'An account with this mobile number already exists.'}, status=400)
+
+        cfg = AdminUser.ROLE_CREDENTIALS.get(role, {})
+        required_fields = cfg.get('required_fields', [])
+        missing = [f for f in required_fields if not d.get(f, '').strip()]
+        if missing:
+            return Response({
+                'error': f'Missing required credentials for {cfg.get("label", role)}: {", ".join(missing)}'
+            }, status=400)
+
+        user = User.objects.create_user(
+            mobile=mobile,
+            password=password,
+            name=name,
+        )
+        user.is_staff = True
+        if is_super:
+            user.is_superuser = True
+        user.save()
+
+        profile = AdminUser.objects.create(
+            user=user,
+            role=role,
+            department=d.get('department', '').strip(),
+            employee_id=d.get('employee_id', '').strip(),
+            designation=d.get('designation', '').strip(),
+            qualification=d.get('qualification', '').strip(),
+            licence_number=d.get('licence_number', '').strip(),
+            govt_id_type=d.get('govt_id_type', '').strip(),
+            govt_id_number=d.get('govt_id_number', '').strip(),
+            is_verified=is_super,
+            verified_at=timezone.now() if is_super else None,
+            must_change_password=False,
+        )
+
+        if is_super:
+            return Response({
+                'message': f'Super Admin account activated for {name}. You now have full control and can log in immediately.',
+                'profile_id': profile.id,
+                'auto_verified': True,
+            }, status=201)
+
+        return Response({
+            'message': (
+                f'Application submitted for {name} ({cfg.get("label", role)}). '
+                'Your credentials are pending verification by the Super Admin before you can log in.'
+            ),
+            'profile_id': profile.id,
+            'auto_verified': False,
+        }, status=201)
+
+
+class StaffDeleteView(APIView):
+    """Super Admin: delete a staff account."""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            role = request.user.admin_profile.role
+        except Exception:
+            role = 'SUPER_ADMIN' if request.user.is_superuser else None
+        if role != 'SUPER_ADMIN':
+            return Response({'error': 'Permission denied.'}, status=403)
+
+        try:
+            profile = AdminUser.objects.select_related('user').get(pk=pk)
+        except AdminUser.DoesNotExist:
+            return Response({'error': 'Staff profile not found.'}, status=404)
+
+        if profile.user_id == request.user.id:
+            return Response({'error': 'You cannot delete your own Super Admin account.'}, status=400)
+
+        name = profile.user.name
+        profile.user.delete()
+        return Response({'message': f'Staff account "{name}" has been deleted.'})
+
+
+class StaffDrugManageView(APIView):
+    """Super Admin: view full drug/lab-result list, toggle active status, or delete records."""
+    permission_classes = [IsAuthenticated]
+
+    def _is_super_admin(self, request):
+        try:
+            role = request.user.admin_profile.role
+        except Exception:
+            role = 'SUPER_ADMIN' if request.user.is_superuser else None
+        return role == 'SUPER_ADMIN'
+
+    def get(self, request):
+        if not self._is_super_admin(request):
+            return Response({'error': 'Permission denied.'}, status=403)
+
+        from django.db.models import Q
+        from apps.drugs.models import LabResult
+
+        q = request.GET.get('q', '').strip()
+        qs = LabResult.objects.select_related('drug', 'drug__manufacturer', 'lab').order_by('-created_at')
+        if q:
+            qs = qs.filter(
+                Q(drug__brand_name__icontains=q) |
+                Q(drug__generic_name__icontains=q) |
+                Q(batch_no__icontains=q) |
+                Q(result_type__icontains=q)
+            )
+
+        return Response([{
+            'id': r.id,
+            'brand_name': r.drug.brand_name if r.drug else '',
+            'generic_name': r.drug.generic_name if r.drug else '',
+            'manufacturer': r.drug.manufacturer.name if (r.drug and r.drug.manufacturer) else '',
+            'batch_no': r.batch_no,
+            'result_type': r.result_type,
+            'lab': r.lab.name if r.lab else '',
+            'test_date': str(r.test_date),
+            'action_taken': r.action_taken,
+            'source': r.source,
+            'is_active': r.is_active,
+        } for r in qs[:200]])
+
+    def patch(self, request, pk):
+        if not self._is_super_admin(request):
+            return Response({'error': 'Permission denied.'}, status=403)
+        from apps.drugs.models import LabResult
+        try:
+            r = LabResult.objects.get(pk=pk)
+        except LabResult.DoesNotExist:
+            return Response({'error': 'Drug record not found.'}, status=404)
+
+        if 'is_active' in request.data:
+            r.is_active = bool(request.data['is_active'])
+        if 'result_type' in request.data:
+            r.result_type = request.data['result_type']
+        if 'action_taken' in request.data:
+            r.action_taken = request.data['action_taken']
+        r.save()
+        return Response({'message': 'Drug record updated.', 'is_active': r.is_active})
+
+    def delete(self, request, pk):
+        if not self._is_super_admin(request):
+            return Response({'error': 'Permission denied.'}, status=403)
+        from apps.drugs.models import LabResult
+        try:
+            r = LabResult.objects.get(pk=pk)
+        except LabResult.DoesNotExist:
+            return Response({'error': 'Drug record not found.'}, status=404)
+        brand = r.drug.brand_name if r.drug else 'Record'
+        batch = r.batch_no
+        r.delete()
+        return Response({'message': f'Deleted {brand} (Batch: {batch}).'})
+
+
+class StaffCDSCOImportView(APIView):
+    """Super Admin / Uploader: ingest a CDSCO or State Lab NSQ PDF into staging."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            role = request.user.admin_profile.role
+        except Exception:
+            role = 'SUPER_ADMIN' if request.user.is_superuser else None
+        if role not in ('SUPER_ADMIN', 'UPLOADER'):
+            return Response({'error': 'Permission denied.'}, status=403)
+
+        from apps.drugs.cdsco_parser import parse_cdsco_pdf
+        import requests as http_requests
+
+        source_label = request.data.get('source', 'CDSCO')
+        uploaded_file = request.FILES.get('file')
+        pdf_url = request.data.get('pdf_url', '').strip()
+
+        if not uploaded_file and not pdf_url:
+            return Response({'error': 'Please upload a PDF file or provide a PDF URL.'}, status=400)
+
+        try:
+            if uploaded_file:
+                result = parse_cdsco_pdf(uploaded_file.read(), source_label=source_label)
+            else:
+                resp = http_requests.get(pdf_url, timeout=30)
+                resp.raise_for_status()
+                result = parse_cdsco_pdf(resp.content, source_label=source_label)
+        except Exception as exc:
+            return Response({'error': f'Failed to parse PDF: {exc}'}, status=400)
+
+        return Response({
+            'message': (
+                f'Imported {result["imported_count"]} record(s) into staging '
+                f'({result["skipped_count"]} duplicate(s) skipped). Pending Data Approver review.'
+            ),
+            **result,
+        }, status=201)
+
+
 

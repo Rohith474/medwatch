@@ -43,3 +43,18 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"[{self.severity}] {self.title}"
+
+
+class PushSubscription(models.Model):
+    """Anonymous browser/device Web Push subscription (VAPID — 100% free)."""
+    endpoint = models.URLField(max_length=500, unique=True)
+    p256dh = models.CharField(max_length=255)
+    auth = models.CharField(max_length=255)
+    privacy_mode = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"PushSub #{self.id} ({self.endpoint[:45]}...)"

@@ -22,6 +22,8 @@ const ROLE_LABELS: Record<string, string> = {
 const ROLE_NAV: Record<string, { label: string; href: string }[]> = {
   SUPER_ADMIN: [
     { label: '📊 Dashboard', href: '/staff/dashboard' },
+    { label: '💊 Manage Drug List', href: '/staff/drugs' },
+    { label: '📄 CDSCO PDF Import', href: '/staff/cdsco-import' },
     { label: '👥 Manage Staff', href: '/staff/manage' },
     { label: '✅ Approve Records', href: '/staff/approve' },
     { label: '📦 Add Drug Record', href: '/staff/upload' },
@@ -33,6 +35,7 @@ const ROLE_NAV: Record<string, { label: string; href: string }[]> = {
   ],
   UPLOADER: [
     { label: '📦 Add Drug Record', href: '/staff/upload' },
+    { label: '📄 CDSCO PDF Import', href: '/staff/cdsco-import' },
   ],
   DEPT_OFFICER: [
     { label: '📋 Manage Regulations', href: '/staff/regulations' },

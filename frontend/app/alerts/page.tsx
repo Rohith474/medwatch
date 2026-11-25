@@ -1,5 +1,6 @@
 import { getNotifications } from '@/lib/api';
 import Link from 'next/link';
+import EnableAlertsButton from '@/components/EnableAlertsButton';
 
 const SEVERITY_CONFIG = {
   CRITICAL: { color: 'text-red-700', bg: 'bg-red-700', border: 'border-red-500', boxTop: 'bg-red-600', badge: 'bg-red-700 text-white', icon: '🔴', label: 'CRITICAL' },
@@ -96,6 +97,10 @@ export default async function AlertsPage() {
             Live alerts from Kerala Drug Control Department and CDSCO.
             If your medicine appears here — stop use immediately and contact your pharmacist.
           </p>
+
+          <div className="mt-5">
+            <EnableAlertsButton />
+          </div>
 
           {/* Stats */}
           <div className="flex flex-wrap gap-4 mt-6">
