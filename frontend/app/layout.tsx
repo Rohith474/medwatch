@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import AlertTicker from "@/components/AlertTicker";
+import { LanguageProvider } from "@/lib/i18n";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,9 +17,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.className}>
       <body className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar />
-        <AlertTicker />
-        <main className="flex-1">{children}</main>
+        <LanguageProvider>
+          <Navbar />
+          <AlertTicker />
+          <main className="flex-1">{children}</main>
 
         {/* Footer */}
         <footer className="bg-gradient-to-r from-[#001a40] to-[#002a60] text-white mt-auto">
@@ -89,6 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <a href="#" className="ml-2 hover:text-white">Terms of Use</a>
           </div>
         </footer>
+        </LanguageProvider>
       </body>
     </html>
   );

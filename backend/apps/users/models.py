@@ -204,3 +204,21 @@ class AdminUser(models.Model):
         if self.role == 'SUPER_ADMIN':
             return True
         return self.role == 'APPROVER' and self.is_verified and self.credentials_complete()
+
+
+class AuditLog(models.Model):
+    """Tamper-proof government audit trail for all staff & admin operations."""
+    actor = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
+    actor_name = models.CharField(max_length=255)
+    actor_role = models.CharField(max_length=50, blank=True)
+    action = models.CharField(max_length=60, db_index=True)
+    target = models.CharField(max_length=255, blank=True)
+    details = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.created_at:%Y-%m-%d %H:%M}] {self.actor_name} -> {self.action}"

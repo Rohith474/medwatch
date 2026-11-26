@@ -7,8 +7,33 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import User, OTPRecord, AdminUser
+from .models import User, OTPRecord, AdminUser, AuditLog
 from django.conf import settings
+
+
+def log_audit(request, action: str, target: str = '', details: str = '', actor_user=None, actor_role: str = ''):
+    """Safely record an immutable government audit entry."""
+    try:
+        user = actor_user or (request.user if request.user.is_authenticated else None)
+        role = actor_role
+        if not role and user is not None:
+            try:
+                role = user.admin_profile.role
+            except Exception:
+                role = 'SUPER_ADMIN' if user.is_superuser else ''
+        ip = request.META.get('HTTP_X_FORWARDED_FOR', request.META.get('REMOTE_ADDR', ''))
+        ip = ip.split(',')[0].strip() if ip else None
+        AuditLog.objects.create(
+            actor=user,
+            actor_name=user.name if user else 'System',
+            actor_role=role,
+            action=action,
+            target=str(target)[:255],
+            details=str(details),
+            ip_address=ip or None,
+        )
+    except Exception:
+        pass
 
 
 def generate_otp():
@@ -82,6 +107,7 @@ class OTPVerifyView(APIView):
         )
 
         refresh = RefreshToken.for_user(user)
+        log_audit(request, 'STAFF_LOGIN', target=user.mobile, details=f"Role: {role}", actor_user=user, actor_role=role or '')
         return Response({
             'access': str(refresh.access_token),
             'refresh': str(refresh),
@@ -157,6 +183,7 @@ class StaffLoginView(APIView):
             must_change = False
 
         refresh = RefreshToken.for_user(user)
+        log_audit(request, 'STAFF_LOGIN', target=user.mobile, details=f"Role: {role}", actor_user=user, actor_role=role or '')
         return Response({
             'access': str(refresh.access_token),
             'refresh': str(refresh),
@@ -219,9 +246,12 @@ class StaffPendingResultsView(APIView):
         if action == 'approve':
             result.is_active = True
             result.save()
+            log_audit(request, 'DRUG_APPROVED', target=f"{result.drug.brand_name} ({result.batch_no})", details=result.result_type)
             return Response({'message': 'Record approved and is now live.'})
         elif action == 'reject':
+            label = f"{result.drug.brand_name} ({result.batch_no})"
             result.delete()
+            log_audit(request, 'DRUG_REJECTED', target=label)
             return Response({'message': 'Record rejected and deleted.'})
         return Response({'error': 'Invalid action. Use approve or reject.'}, status=400)
 
@@ -242,11 +272,15 @@ class StaffAddDrugView(APIView):
             return Response({'error': 'Permission denied.'}, status=403)
 
         d = request.data
+        mfr_name = d.get('manufacturer_name', 'Unknown').strip() or 'Unknown'
+        lic_no = d.get('license_number', '').strip() or f"LIC-{abs(hash(mfr_name)) % 10**8}"
         # Find or create manufacturer
-        mfr, _ = Manufacturer.objects.get_or_create(
-            name=d.get('manufacturer_name', 'Unknown'),
-            defaults={'license_number': d.get('license_number', ''), 'state': d.get('state', 'Kerala')}
-        )
+        mfr = Manufacturer.objects.filter(name__iexact=mfr_name).first()
+        if not mfr:
+            mfr, _ = Manufacturer.objects.get_or_create(
+                license_number=lic_no,
+                defaults={'name': mfr_name, 'state': d.get('state', 'Kerala')}
+            )
         # Find or create drug
         drug, _ = Drug.objects.get_or_create(
             brand_name=d.get('brand_name', ''),
@@ -265,6 +299,7 @@ class StaffAddDrugView(APIView):
             source='MANUAL',
             is_active=False,  # Needs approver sign-off
         )
+        log_audit(request, 'DRUG_ADDED', target=f"{drug.brand_name} ({result.batch_no})", details=f"{result.result_type} | Pending Approval")
         return Response({
             'message': 'Drug record submitted. Pending approver review.',
             'result_id': result.id,
@@ -502,11 +537,13 @@ class StaffVerifyView(APIView):
             profile.is_verified = True
             profile.verified_at = timezone.now()
             profile.save(update_fields=['is_verified', 'verified_at'])
+            log_audit(request, 'STAFF_VERIFIED', target=f"{profile.user.name} ({profile.role})")
             return Response({'message': f'{profile.user.name} has been verified and can now log in.'})
 
         elif action == 'suspend':
             profile.is_verified = False
             profile.save(update_fields=['is_verified'])
+            log_audit(request, 'STAFF_SUSPENDED', target=f"{profile.user.name} ({profile.role})")
             return Response({'message': f'{profile.user.name} has been suspended.'})
 
         return Response({'error': 'Invalid action. Use "verify" or "suspend".'}, status=400)
@@ -563,6 +600,7 @@ class StaffSendNotificationView(APIView):
         )
         from apps.notifications.push_service import send_web_push_to_all
         push_stats = send_web_push_to_all(notif)
+        log_audit(request, 'ALERT_SENT', target=notif.title, details=f"Severity: {notif.severity} | Pushed: {push_stats['sent']}")
         return Response({
             'message': f'Notification sent! Pushed to {push_stats["sent"]} subscribed device(s).',
             'id': notif.id,
@@ -745,6 +783,7 @@ class StaffDrugManageView(APIView):
         if 'action_taken' in request.data:
             r.action_taken = request.data['action_taken']
         r.save()
+        log_audit(request, 'DRUG_UPDATED', target=f"{r.drug.brand_name} ({r.batch_no})", details=f"is_active={r.is_active}")
         return Response({'message': 'Drug record updated.', 'is_active': r.is_active})
 
     def delete(self, request, pk):
@@ -758,6 +797,7 @@ class StaffDrugManageView(APIView):
         brand = r.drug.brand_name if r.drug else 'Record'
         batch = r.batch_no
         r.delete()
+        log_audit(request, 'DRUG_DELETED', target=f"{brand} ({batch})")
         return Response({'message': f'Deleted {brand} (Batch: {batch}).'})
 
 
@@ -793,6 +833,12 @@ class StaffCDSCOImportView(APIView):
         except Exception as exc:
             return Response({'error': f'Failed to parse PDF: {exc}'}, status=400)
 
+        log_audit(
+            request,
+            'CDSCO_PDF_IMPORTED',
+            target=f"{source_label} PDF",
+            details=f"Imported: {result['imported_count']}, Skipped: {result['skipped_count']}",
+        )
         return Response({
             'message': (
                 f'Imported {result["imported_count"]} record(s) into staging '
@@ -800,6 +846,118 @@ class StaffCDSCOImportView(APIView):
             ),
             **result,
         }, status=201)
+
+
+class StaffCitizenReportsView(APIView):
+    """Super Admin & Data Approver: view, update status, or delete citizen reports."""
+    permission_classes = [IsAuthenticated]
+
+    def _allowed(self, request):
+        try:
+            role = request.user.admin_profile.role
+        except Exception:
+            role = 'SUPER_ADMIN' if request.user.is_superuser else None
+        return role in ('SUPER_ADMIN', 'APPROVER')
+
+    def get(self, request):
+        if not self._allowed(request):
+            return Response({'error': 'Permission denied.'}, status=403)
+        from apps.drugs.models import CitizenReport
+        reports = CitizenReport.objects.all().order_by('-created_at')[:100]
+        return Response([{
+            'id': r.id,
+            'reference_code': f'MW-RPT-{r.id}',
+            'drug_name': r.drug_name,
+            'batch_no': r.batch_no,
+            'manufacturer_name': r.manufacturer_name,
+            'issue_type': r.issue_type,
+            'issue_label': r.get_issue_type_display(),
+            'pharmacy_or_location': r.pharmacy_or_location,
+            'district': r.district,
+            'description': r.description,
+            'reporter_contact': r.reporter_contact,
+            'status': r.status,
+            'inspector_notes': r.inspector_notes,
+            'created_at': r.created_at.strftime('%Y-%m-%d %H:%M'),
+        } for r in reports])
+
+    def patch(self, request, pk):
+        if not self._allowed(request):
+            return Response({'error': 'Permission denied.'}, status=403)
+        from apps.drugs.models import CitizenReport
+        try:
+            r = CitizenReport.objects.get(pk=pk)
+        except CitizenReport.DoesNotExist:
+            return Response({'error': 'Report not found.'}, status=404)
+
+        new_status = request.data.get('status')
+        notes = request.data.get('inspector_notes', '').strip()
+
+        if new_status in ('RESOLVED', 'DISMISSED') and not notes and not r.inspector_notes.strip():
+            return Response(
+                {'error': 'Please enter Inspector Investigation Notes explaining the action taken.'},
+                status=400,
+            )
+
+        if new_status and new_status in dict(CitizenReport.STATUS_CHOICES):
+            r.status = new_status
+        if notes:
+            stamp = timezone.now().strftime('%d %b %Y, %I:%M %p')
+            r.inspector_notes = f"[{request.user.name} · {stamp}] {notes}"
+        r.save()
+        log_audit(request, 'REPORT_UPDATED', target=f"MW-RPT-{r.id} ({r.drug_name})", details=f"Status: {r.status} | {notes}")
+        return Response({'message': f'Report MW-RPT-{r.id} updated to {r.status}.'})
+
+    def delete(self, request, pk):
+        if not self._allowed(request):
+            return Response({'error': 'Permission denied.'}, status=403)
+        from apps.drugs.models import CitizenReport
+        try:
+            r = CitizenReport.objects.get(pk=pk)
+        except CitizenReport.DoesNotExist:
+            return Response({'error': 'Report not found.'}, status=404)
+        label = f"MW-RPT-{pk} ({r.drug_name})"
+        r.delete()
+        log_audit(request, 'REPORT_DELETED', target=label)
+        return Response({'message': f'Report MW-RPT-{pk} deleted.'})
+
+
+class StaffAuditLogView(APIView):
+    """Super Admin: view tamper-proof government audit trail."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            role = request.user.admin_profile.role
+        except Exception:
+            role = 'SUPER_ADMIN' if request.user.is_superuser else None
+        if role != 'SUPER_ADMIN':
+            return Response({'error': 'Permission denied.'}, status=403)
+
+        from django.db.models import Q
+        qs = AuditLog.objects.all().order_by('-created_at')
+        action = request.GET.get('action', '').strip()
+        q = request.GET.get('q', '').strip()
+        if action:
+            qs = qs.filter(action=action)
+        if q:
+            qs = qs.filter(
+                Q(actor_name__icontains=q) |
+                Q(target__icontains=q) |
+                Q(details__icontains=q) |
+                Q(action__icontains=q)
+            )
+
+        return Response([{
+            'id': log.id,
+            'actor_name': log.actor_name,
+            'actor_role': log.actor_role,
+            'action': log.action,
+            'target': log.target,
+            'details': log.details,
+            'ip_address': log.ip_address or '',
+            'created_at': log.created_at.strftime('%d %b %Y, %I:%M:%S %p'),
+        } for log in qs[:200]])
 
 
 

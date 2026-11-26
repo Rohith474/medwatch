@@ -24,14 +24,17 @@ const ROLE_NAV: Record<string, { label: string; href: string }[]> = {
     { label: '📊 Dashboard', href: '/staff/dashboard' },
     { label: '💊 Manage Drug List', href: '/staff/drugs' },
     { label: '📄 CDSCO PDF Import', href: '/staff/cdsco-import' },
+    { label: '🚨 Citizen Reports', href: '/staff/reports' },
     { label: '👥 Manage Staff', href: '/staff/manage' },
     { label: '✅ Approve Records', href: '/staff/approve' },
     { label: '📦 Add Drug Record', href: '/staff/upload' },
     { label: '📋 Regulations', href: '/staff/regulations' },
     { label: '🔔 Send Notifications', href: '/staff/notifications' },
+    { label: '📜 Audit Log', href: '/staff/audit-log' },
   ],
   APPROVER: [
     { label: '✅ Pending Approvals', href: '/staff/approve' },
+    { label: '🚨 Citizen Reports', href: '/staff/reports' },
   ],
   UPLOADER: [
     { label: '📦 Add Drug Record', href: '/staff/upload' },

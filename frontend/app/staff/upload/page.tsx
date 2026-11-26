@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import StaffLayout, { StaffRedirect } from '@/components/StaffLayout';
 import { addDrugRecord, useStaffSession } from '@/lib/staff-api';
 
@@ -15,6 +15,26 @@ export default function UploadPage() {
   });
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const brand = params.get('brand') || '';
+    const batch = params.get('batch') || '';
+    const mfr = params.get('mfr') || '';
+    const rtype = params.get('result_type') || '';
+    const note = params.get('note') || '';
+    if (brand || batch || mfr || rtype || note) {
+      setForm(prev => ({
+        ...prev,
+        brand_name: brand || prev.brand_name,
+        batch_no: batch || prev.batch_no,
+        manufacturer_name: mfr || prev.manufacturer_name,
+        result_type: RESULT_TYPES.includes(rtype) ? rtype : prev.result_type,
+        action_taken: note || prev.action_taken,
+      }));
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));

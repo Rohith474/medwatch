@@ -1,5 +1,6 @@
 import { getRegulations } from '@/lib/api';
 import Link from 'next/link';
+import { T } from '@/lib/i18n';
 
 const MOCK_REGULATIONS = [
   {
@@ -67,9 +68,9 @@ export default async function RegulationsPage() {
       <div className="bg-gradient-to-r from-[#001a40] to-[#003580] text-white py-12 px-6">
         <div className="max-w-5xl mx-auto text-center">
           <div className="text-5xl mb-3">📋</div>
-          <h1 className="text-4xl font-black mb-2">Drug Regulations & Gazette</h1>
+          <h1 className="text-4xl font-black mb-2"><T k="reg_title" /></h1>
           <p className="text-blue-300 text-sm max-w-xl mx-auto">
-            Official regulations, acts, and circulars governing drug quality in India and Kerala. Published by CDSCO and Kerala Drug Control Department.
+            <T k="reg_sub" />
           </p>
           <div className="flex flex-wrap justify-center gap-3 mt-6">
             <span className="bg-white/10 border border-white/20 text-white text-xs px-3 py-1 rounded-full">Drugs & Cosmetics Act</span>
@@ -84,8 +85,8 @@ export default async function RegulationsPage() {
 
         {/* Official Gazette masthead */}
         <div className="bg-amber-100 border-4 border-double border-amber-800 rounded-2xl p-6 mb-8 text-center">
-          <div className="text-amber-900 text-xs font-bold tracking-widest uppercase mb-1">The Kerala Government Gazette</div>
-          <div className="text-amber-800 text-2xl font-black">Official Drug Control Notifications</div>
+          <div className="text-amber-900 text-xs font-bold tracking-widest uppercase mb-1"><T k="reg_masthead" /></div>
+          <div className="text-amber-800 text-2xl font-black"><T k="reg_official" /></div>
           <div className="text-amber-700 text-xs mt-1 font-mono">
             {regs.length} Regulation{regs.length !== 1 ? 's' : ''} Listed · Last Updated: {new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' })}
           </div>

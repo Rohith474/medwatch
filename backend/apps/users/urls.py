@@ -7,6 +7,7 @@ from .views import (
     StaffManagementView, StaffVerifyView, StaffChangePasswordView,
     StaffSendNotificationView, StaffRegisterView,
     StaffDeleteView, StaffDrugManageView, StaffCDSCOImportView,
+    StaffCitizenReportsView, StaffAuditLogView,
 )
 
 urlpatterns = [
@@ -23,6 +24,8 @@ urlpatterns = [
 
     # Staff portal — data operations
     path('staff/cdsco-import/', StaffCDSCOImportView.as_view(), name='staff-cdsco-import'),
+    path('staff/reports/', StaffCitizenReportsView.as_view(), name='staff-reports'),
+    path('staff/reports/<int:pk>/', StaffCitizenReportsView.as_view(), name='staff-report-detail'),
     path('staff/drugs/', StaffDrugManageView.as_view(), name='staff-drugs-list'),
     path('staff/drugs/<int:pk>/', StaffDrugManageView.as_view(), name='staff-drugs-detail'),
     path('staff/pending-results/', StaffPendingResultsView.as_view(), name='staff-pending'),
@@ -31,6 +34,7 @@ urlpatterns = [
     path('staff/regulations/', StaffAddRegulationView.as_view(), name='staff-regulations'),
     path('staff/regulations/<int:pk>/', StaffAddRegulationView.as_view(), name='staff-regulations-delete'),
     path('staff/stats/', StaffDashboardStatsView.as_view(), name='staff-stats'),
+    path('staff/audit-logs/', StaffAuditLogView.as_view(), name='staff-audit-logs'),
     path('staff/notifications/send/', StaffSendNotificationView.as_view(), name='staff-notify'),
 
     # Staff management — Super Admin only

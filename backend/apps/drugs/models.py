@@ -67,3 +67,37 @@ class LabResult(models.Model):
 
     def __str__(self):
         return f"{self.drug.brand_name} | Batch: {self.batch_no} | {self.result_type}"
+
+
+class CitizenReport(models.Model):
+    """Anonymous (or optional-contact) citizen report of suspected fake/adverse medicine."""
+    ISSUE_TYPES = [
+        ('SUSPECTED_FAKE', 'Suspected Spurious / Fake Medicine'),
+        ('ADVERSE_REACTION', 'Adverse Side Effect / Reaction'),
+        ('TAMPERED_PACKAGING', 'Broken Seal / Tampered Label'),
+        ('QUALITY_ISSUE', 'Discoloration / Spoiled / Foul Smell'),
+    ]
+    STATUS_CHOICES = [
+        ('NEW', 'New'),
+        ('UNDER_REVIEW', 'Under Review'),
+        ('RESOLVED', 'Resolved / Action Taken'),
+        ('DISMISSED', 'Dismissed'),
+    ]
+
+    drug_name = models.CharField(max_length=255)
+    batch_no = models.CharField(max_length=100, blank=True)
+    manufacturer_name = models.CharField(max_length=255, blank=True)
+    issue_type = models.CharField(max_length=30, choices=ISSUE_TYPES, default='SUSPECTED_FAKE')
+    pharmacy_or_location = models.CharField(max_length=255, blank=True)
+    district = models.CharField(max_length=100, blank=True)
+    description = models.TextField()
+    reporter_contact = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='NEW')
+    inspector_notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"MW-RPT-{self.id} | {self.drug_name} ({self.issue_type})"

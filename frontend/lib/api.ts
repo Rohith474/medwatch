@@ -63,3 +63,43 @@ export async function getNotifications(): Promise<Notification[]> {
   const data = await res.json();
   return Array.isArray(data) ? data : data.results ?? [];
 }
+
+export async function submitCitizenReport(payload: {
+  drug_name: string;
+  batch_no?: string;
+  manufacturer_name?: string;
+  issue_type: string;
+  pharmacy_or_location?: string;
+  district?: string;
+  description: string;
+  reporter_contact?: string;
+}): Promise<{ message: string; report_id: number; reference_code: string }> {
+  const res = await fetch(`${API_BASE}/api/v1/drugs/report/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Failed to submit report');
+  return data;
+}
+
+export interface TrackedReport {
+  reference_code: string;
+  drug_name: string;
+  batch_no: string;
+  issue_label: string;
+  district: string;
+  status: 'NEW' | 'UNDER_REVIEW' | 'RESOLVED' | 'DISMISSED';
+  inspector_notes: string;
+  created_at: string;
+}
+
+export async function trackCitizenReport(ref: string): Promise<TrackedReport> {
+  const res = await fetch(`${API_BASE}/api/v1/drugs/report/track/?ref=${encodeURIComponent(ref)}`, {
+    cache: 'no-store',
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Report not found');
+  return data;
+}

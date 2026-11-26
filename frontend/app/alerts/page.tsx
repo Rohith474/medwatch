@@ -1,6 +1,7 @@
 import { getNotifications } from '@/lib/api';
 import Link from 'next/link';
 import EnableAlertsButton from '@/components/EnableAlertsButton';
+import { T } from '@/lib/i18n';
 
 const SEVERITY_CONFIG = {
   CRITICAL: { color: 'text-red-700', bg: 'bg-red-700', border: 'border-red-500', boxTop: 'bg-red-600', badge: 'bg-red-700 text-white', icon: '🔴', label: 'CRITICAL' },
@@ -90,12 +91,11 @@ export default async function AlertsPage() {
         <div className="max-w-6xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-red-600/50 border border-red-400/30 rounded-full px-3 py-1 text-red-200 text-xs font-semibold uppercase tracking-widest mb-4">
             <span className="w-2 h-2 bg-red-200 rounded-full animate-pulse"></span>
-            Live Drug Recall Alerts
+            <T k="alerts_badge" />
           </div>
-          <h1 className="text-4xl font-black mb-2">Active Drug Recalls</h1>
+          <h1 className="text-4xl font-black mb-2"><T k="alerts_title" /></h1>
           <p className="text-red-200 max-w-xl text-sm">
-            Live alerts from Kerala Drug Control Department and CDSCO.
-            If your medicine appears here — stop use immediately and contact your pharmacist.
+            <T k="alerts_sub" />
           </p>
 
           <div className="mt-5">
@@ -106,15 +106,15 @@ export default async function AlertsPage() {
           <div className="flex flex-wrap gap-4 mt-6">
             <div className="bg-red-800/60 border border-red-600/40 rounded-xl px-4 py-2 text-sm">
               <span className="font-black text-lg mr-1">{critical.length}</span>
-              <span className="text-red-200">Critical Alerts</span>
+              <span className="text-red-200"><T k="alerts_critical_lbl" /></span>
             </div>
             <div className="bg-orange-800/60 border border-orange-600/40 rounded-xl px-4 py-2 text-sm">
               <span className="font-black text-lg mr-1">{standard.length}</span>
-              <span className="text-red-200">Standard Alerts</span>
+              <span className="text-red-200"><T k="alerts_standard_lbl" /></span>
             </div>
             <div className="bg-yellow-800/60 border border-yellow-600/40 rounded-xl px-4 py-2 text-sm">
               <span className="font-black text-lg mr-1">{advisory.length}</span>
-              <span className="text-red-200">Advisories</span>
+              <span className="text-red-200"><T k="alerts_advisory_lbl" /></span>
             </div>
             <div className="bg-white/10 border border-white/20 rounded-xl px-4 py-2 text-sm text-red-200">
               🕒 Last updated: {new Date().toLocaleString('en-IN', { timeStyle: 'short', dateStyle: 'medium' })}

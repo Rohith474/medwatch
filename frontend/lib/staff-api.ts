@@ -349,3 +349,74 @@ export async function importCDSCOPdf(formData: FormData): Promise<CDSCOImportRes
   if (!res.ok) throw new Error(data.error || 'Failed to import PDF');
   return data;
 }
+
+// ── Citizen Reports (Super Admin & Approver) ──────────────────────────────────
+
+export interface CitizenReportItem {
+  id: number;
+  reference_code: string;
+  drug_name: string;
+  batch_no: string;
+  manufacturer_name: string;
+  issue_type: string;
+  issue_label: string;
+  pharmacy_or_location: string;
+  district: string;
+  description: string;
+  reporter_contact: string;
+  status: string;
+  inspector_notes: string;
+  created_at: string;
+}
+
+export async function getCitizenReports(): Promise<CitizenReportItem[]> {
+  const res = await fetch(`${API}/auth/staff/reports/`, { headers: authHeaders() });
+  if (!res.ok) throw new Error('Failed to fetch citizen reports');
+  return res.json();
+}
+
+export async function updateCitizenReport(id: number, status: string, inspectorNotes = ''): Promise<{ message: string }> {
+  const res = await fetch(`${API}/auth/staff/reports/${id}/`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ status, inspector_notes: inspectorNotes }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update report');
+  return data;
+}
+
+export async function deleteCitizenReport(id: number): Promise<{ message: string }> {
+  const res = await fetch(`${API}/auth/staff/reports/${id}/`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to delete report');
+  return data;
+}
+
+// ── Government Audit Log (Super Admin) ────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: number;
+  actor_name: string;
+  actor_role: string;
+  action: string;
+  target: string;
+  details: string;
+  ip_address: string;
+  created_at: string;
+}
+
+export async function getAuditLogs(q = '', action = ''): Promise<AuditLogEntry[]> {
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (action) params.set('action', action);
+  const qs = params.toString();
+  const res = await fetch(`${API}/auth/staff/audit-logs/${qs ? `?${qs}` : ''}`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Failed to fetch audit logs');
+  return res.json();
+}

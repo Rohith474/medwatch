@@ -1,6 +1,8 @@
+'use client';
 import Link from 'next/link';
+import { useLang } from '@/lib/i18n';
 
-function MedicineBox({ color, label, batch }: { color: string; label: string; batch: string }) {
+function MedicineBox({ color, label, batch, nsqText }: { color: string; label: string; batch: string; nsqText: string }) {
   return (
     <div className="medicine-box p-6 cursor-pointer group mt-2">
       <div className={`h-20 rounded-lg mb-3 flex items-center justify-center text-white font-bold text-sm ${color} relative overflow-hidden`}>
@@ -12,7 +14,7 @@ function MedicineBox({ color, label, batch }: { color: string; label: string; ba
       </div>
       <div className="text-xs text-gray-500 font-mono">Batch: {batch}</div>
       <div className="mt-2">
-        <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">🔴 NSQ FOUND</span>
+        <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">🔴 {nsqText}</span>
       </div>
     </div>
   );
@@ -29,6 +31,8 @@ function StatCard({ value, label, icon, color }: { value: string; label: string;
 }
 
 export default function HomePage() {
+  const { t } = useLang();
+
   const recentAlerts = [
     { name: "Paracip 500mg", batch: "CIP2024001", color: "bg-blue-600" },
     { name: "Azithral 250mg", batch: "AZT2024099", color: "bg-purple-600" },
@@ -69,38 +73,35 @@ export default function HomePage() {
           <div>
             <div className="inline-flex items-center gap-2 bg-blue-900/50 border border-blue-500/30 rounded-full px-4 py-1.5 text-blue-300 text-xs font-semibold uppercase tracking-widest mb-6">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-              Live Drug Verification System
+              {t('home_badge')}
             </div>
-            <h1 className="text-5xl lg:text-6xl font-black leading-tight mb-4">
-              Is Your Medicine
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300">Safe to Take?</span>
+            <h1 className="text-4xl lg:text-6xl font-black leading-tight mb-4">
+              {t('home_hero_1')}
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300">{t('home_hero_2')}</span>
             </h1>
             <p className="text-blue-200 text-lg leading-relaxed mb-8 max-w-lg">
-              Enter any medicine batch number to instantly verify if it has been flagged as{' '}
-              <strong className="text-red-400">NSQ</strong>,{' '}
-              <strong className="text-orange-400">Spurious</strong>, or{' '}
-              <strong className="text-yellow-400">Adulterated</strong> by Kerala Drug Control &amp; CDSCO.
+              {t('home_hero_sub')}
             </p>
 
             <form action="/search" className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 mb-6">
-              <div className="text-xs text-blue-300 uppercase tracking-wider mb-3 font-semibold">⚡ Quick Verify</div>
+              <div className="text-xs text-blue-300 uppercase tracking-wider mb-3 font-semibold">⚡ {t('home_quick')}</div>
               <div className="flex flex-col sm:flex-row gap-3">
-                <input name="batch" type="text" placeholder="Batch Number (e.g. CIP2024001)"
+                <input name="batch" type="text" placeholder={t('label_batch')}
                   className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
-                <input name="drug" type="text" placeholder="Drug Name"
+                <input name="drug" type="text" placeholder={t('label_drug')}
                   className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder-blue-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
                 <button type="submit" className="pill-btn bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 px-6 py-3 font-bold text-sm transition-all">
-                  🔍 Verify
+                  🔍 {t('home_verify_btn')}
                 </button>
               </div>
             </form>
 
             <div className="flex flex-wrap gap-3">
               <Link href="/search" className="pill-btn bg-red-600 hover:bg-red-500 text-white px-6 py-3 font-semibold text-sm flex items-center gap-2 transition-all">
-                📦 Scan Medicine Box
+                📦 {t('home_scan_box')}
               </Link>
               <Link href="/alerts" className="pill-btn bg-transparent border-2 border-white/30 hover:border-white text-white px-6 py-3 font-semibold text-sm flex items-center gap-2 transition-all">
-                🚨 View Active Recalls
+                🚨 {t('home_view_recalls')}
               </Link>
             </div>
           </div>
@@ -130,7 +131,7 @@ export default function HomePage() {
                 </div>
                 <div className="nsq-badge text-white rounded-xl p-3 text-center">
                   <div className="text-xs opacity-80 mb-1 uppercase tracking-widest">Verification Result</div>
-                  <div className="text-lg font-black">🔴 NSQ FOUND</div>
+                  <div className="text-base font-black">🔴 {t('res_NSQ_FOUND')}</div>
                   <div className="text-xs opacity-80 mt-1">Stop Sale Order Active</div>
                 </div>
                 <div className="mt-4 text-xs font-mono text-green-400 space-y-1">
@@ -149,10 +150,10 @@ export default function HomePage() {
       {/* STATS */}
       <section className="bg-gradient-to-r from-[#002060] to-[#003580] py-12">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-          <StatCard value="14,230+" label="Drug Batches Verified Today" icon="🔍" color="text-cyan-300" />
-          <StatCard value="387" label="NSQ Batches in Database" icon="⚠️" color="text-red-400" />
-          <StatCard value="52" label="Accredited Labs Connected" icon="🏥" color="text-green-400" />
-          <StatCard value="2.1M+" label="Citizens Protected" icon="🛡️" color="text-yellow-300" />
+          <StatCard value="14,230+" label={t('home_stat_1')} icon="🔍" color="text-cyan-300" />
+          <StatCard value="387" label={t('home_stat_2')} icon="⚠️" color="text-red-400" />
+          <StatCard value="52" label={t('home_stat_3')} icon="🏥" color="text-green-400" />
+          <StatCard value="2.1M+" label={t('home_stat_4')} icon="🛡️" color="text-yellow-300" />
         </div>
       </section>
 
@@ -160,14 +161,14 @@ export default function HomePage() {
       <section className="py-20 bg-gray-50">
         <div className="max-w-6xl mx-auto px-6">
           <div className="text-center mb-14">
-            <h2 className="text-3xl font-black text-gray-800 mb-3">How It Works</h2>
-            <p className="text-gray-500">Verify any medicine in 3 simple steps</p>
+            <h2 className="text-3xl font-black text-gray-800 mb-3">{t('home_how_title')}</h2>
+            <p className="text-gray-500">{t('home_how_sub')}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {[
-              { step:"01", icon:"📦", title:"Find the Batch Number", desc:"Look at the medicine box or strip. The Batch Number is printed next to the manufacturing date.", color:"from-blue-500 to-blue-700" },
-              { step:"02", icon:"🔍", title:"Enter or Scan", desc:"Type the Batch Number + Drug Name in the search form, or scan the barcode / QR code on the box.", color:"from-purple-500 to-purple-700" },
-              { step:"03", icon:"✅", title:"Get Instant Result", desc:"MEDWATCH checks CDSCO and Kerala Drug Control databases and returns a verified safety status in seconds.", color:"from-teal-500 to-teal-700" },
+              { step:"01", icon:"📦", title:t('home_step1_t'), desc:t('home_step1_d'), color:"from-blue-500 to-blue-700" },
+              { step:"02", icon:"🔍", title:t('home_step2_t'), desc:t('home_step2_d'), color:"from-purple-500 to-purple-700" },
+              { step:"03", icon:"✅", title:t('home_step3_t'), desc:t('home_step3_d'), color:"from-teal-500 to-teal-700" },
             ].map((item) => (
               <div key={item.step} className="group">
                 <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
@@ -181,7 +182,7 @@ export default function HomePage() {
           </div>
           <div className="text-center mt-10">
             <Link href="/search" className="pill-btn inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 text-white px-8 py-4 font-bold text-sm transition-all shadow-lg shadow-blue-500/30">
-              🛡️ Verify My Medicine Now
+              🛡️ {t('home_verify_cta')}
             </Link>
           </div>
         </div>
@@ -192,14 +193,14 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-6">
           <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="text-3xl font-black text-gray-800">Recent Drug Alerts</h2>
-              <p className="text-gray-500 mt-1">Latest batches flagged by Kerala Drug Control &amp; CDSCO</p>
+              <h2 className="text-3xl font-black text-gray-800">{t('home_recent_title')}</h2>
+              <p className="text-gray-500 mt-1">{t('home_recent_sub')}</p>
             </div>
-            <Link href="/alerts" className="pill-btn bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-5 py-2 text-sm font-semibold transition-all">View All →</Link>
+            <Link href="/alerts" className="pill-btn bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-5 py-2 text-sm font-semibold transition-all">{t('home_view_all')}</Link>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
             {recentAlerts.map((drug) => (
-              <MedicineBox key={drug.batch} color={drug.color} label={drug.name} batch={drug.batch} />
+              <MedicineBox key={drug.batch} color={drug.color} label={drug.name} batch={drug.batch} nsqText={t('res_NSQ_FOUND')} />
             ))}
           </div>
         </div>
@@ -209,22 +210,21 @@ export default function HomePage() {
       <section className="py-20 bg-gradient-to-br from-gray-900 to-[#001a40] text-white">
         <div className="max-w-5xl mx-auto px-6">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-black mb-3">Understanding Your Results</h2>
-            <p className="text-blue-300">MEDWATCH never shows &ldquo;PASS&rdquo;. Absence of a record means no adverse report — not a quality clearance.</p>
+            <h2 className="text-3xl font-black mb-3">{t('home_res_title')}</h2>
+            <p className="text-blue-300">{t('home_res_sub')}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {[
-              { badge:"🔴 NSQ FOUND", label:"Not of Standard Quality", desc:"Batch failed lab quality test", bg:"from-red-900/60 to-red-800/40", border:"border-red-700" },
-              { badge:"🔴 SPURIOUS DRUG", label:"Counterfeit Medicine", desc:"Fake / counterfeit drug identified", bg:"from-orange-900/60 to-orange-800/40", border:"border-orange-700" },
-              { badge:"🔴 ADULTERATED", label:"Harmful Contents", desc:"Drug contains harmful substances", bg:"from-yellow-900/60 to-yellow-800/40", border:"border-yellow-700" },
-              { badge:"🔴 MISBRANDED", label:"Incorrect Label", desc:"Incorrect label or identity", bg:"from-pink-900/60 to-pink-800/40", border:"border-pink-700" },
-              { badge:"🟡 NO ADVERSE REPORT", label:"Not in Failed List", desc:"Not in any failed list — not a clearance", bg:"from-yellow-900/40 to-amber-900/40", border:"border-amber-700" },
-              { badge:"⚪ DATA UNAVAILABLE", label:"Insufficient Input", desc:"Could not match — check your input", bg:"from-gray-800/60 to-gray-700/40", border:"border-gray-600" },
+              { badge: `🔴 ${t('res_NSQ_FOUND')}`, desc: t('res_NSQ_SEV'), bg:"from-red-900/60 to-red-800/40", border:"border-red-700" },
+              { badge: `🔴 ${t('res_SPURIOUS_DRUG')}`, desc: t('res_SPURIOUS_SEV'), bg:"from-orange-900/60 to-orange-800/40", border:"border-orange-700" },
+              { badge: `🔴 ${t('res_ADULTERATED')}`, desc: t('res_ADULTERATED_SEV'), bg:"from-yellow-900/60 to-yellow-800/40", border:"border-yellow-700" },
+              { badge: `🔴 ${t('res_MISBRANDED')}`, desc: t('res_MISBRANDED_SEV'), bg:"from-pink-900/60 to-pink-800/40", border:"border-pink-700" },
+              { badge: `🟡 ${t('res_NO_ADVERSE_REPORT')}`, desc: t('res_NO_ADVERSE_SEV'), bg:"from-yellow-900/40 to-amber-900/40", border:"border-amber-700" },
+              { badge: `⚪ ${t('res_DATA_UNAVAILABLE')}`, desc: t('res_DATA_UNAVAILABLE_SEV'), bg:"from-gray-800/60 to-gray-700/40", border:"border-gray-600" },
             ].map((item) => (
               <div key={item.badge} className={`bg-gradient-to-br ${item.bg} border ${item.border} rounded-2xl p-5`}>
                 <div className="text-sm font-black mb-1">{item.badge}</div>
-                <div className="text-white font-semibold text-sm mb-1">{item.label}</div>
-                <div className="text-gray-400 text-xs">{item.desc}</div>
+                <div className="text-gray-300 text-xs leading-relaxed">{item.desc}</div>
               </div>
             ))}
           </div>
@@ -235,10 +235,10 @@ export default function HomePage() {
       <section className="py-16 bg-blue-600 text-white text-center">
         <div className="max-w-2xl mx-auto px-6">
           <div className="text-5xl mb-4">🛡️</div>
-          <h2 className="text-3xl font-black mb-4">Don&apos;t Risk Your Health</h2>
-          <p className="text-blue-100 mb-8">Always verify your medicine before use. It takes 3 seconds and could save your life.</p>
+          <h2 className="text-3xl font-black mb-4">{t('home_cta_title')}</h2>
+          <p className="text-blue-100 mb-8">{t('home_cta_sub')}</p>
           <Link href="/search" className="pill-btn inline-block bg-white text-blue-700 hover:bg-blue-50 px-10 py-4 font-black text-lg transition-all shadow-xl">
-            🔍 Verify Medicine Now — It&apos;s Free
+            🔍 {t('home_cta_btn')}
           </Link>
         </div>
       </section>

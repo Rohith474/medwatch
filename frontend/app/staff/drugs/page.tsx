@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import StaffLayout, { StaffRedirect } from '@/components/StaffLayout';
+import { downloadCsv } from '@/lib/csv';
 import {
   getAllDrugsAdmin,
   toggleDrugStatus,
@@ -94,12 +95,31 @@ export default function ManageDrugsPage() {
               View, search, add, activate/hide, or delete any drug lab record.
             </p>
           </div>
-          <Link
-            href="/staff/upload"
-            className="pill-btn bg-blue-700 hover:bg-blue-800 text-white px-5 py-2.5 text-sm font-bold"
-          >
-            + Add Drug Record
-          </Link>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  `medwatch_drugs_${new Date().toISOString().slice(0, 10)}.csv`,
+                  ['Brand Name', 'Generic Name', 'Batch No', 'Manufacturer', 'Result Type', 'Status', 'Lab', 'Test Date', 'Source', 'Action Taken'],
+                  filtered.map((d) => [
+                    d.brand_name, d.generic_name, d.batch_no, d.manufacturer,
+                    d.result_type, d.is_active ? 'LIVE' : 'PENDING', d.lab, d.test_date, d.source, d.action_taken,
+                  ])
+                )
+              }
+              disabled={filtered.length === 0}
+              className="pill-btn bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 text-sm font-bold disabled:opacity-50"
+            >
+              📥 Export CSV ({filtered.length})
+            </button>
+            <Link
+              href="/staff/upload"
+              className="pill-btn bg-blue-700 hover:bg-blue-800 text-white px-5 py-2.5 text-sm font-bold"
+            >
+              + Add Drug Record
+            </Link>
+          </div>
         </div>
 
         {msg && (

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { searchDrug, SearchResult } from '@/lib/api';
 import Link from 'next/link';
 import CameraScanner from '@/components/CameraScanner';
+import { useLang } from '@/lib/i18n';
 
 const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string; bg: string; border: string; badgeClass: string; severity: string }> = {
   NSQ_FOUND: {
@@ -81,8 +82,13 @@ function PillInput({ label, value, onChange, placeholder, icon }: {
 }
 
 function ResultCard({ result }: { result: SearchResult }) {
+  const { t } = useLang();
   const cfg = STATUS_CONFIG[result.status] ?? STATUS_CONFIG['DATA_UNAVAILABLE'];
   const isCritical = ['NSQ_FOUND', 'SPURIOUS_DRUG', 'ADULTERATED', 'MISBRANDED'].includes(result.status);
+  const labelKey = `res_${result.status}`;
+  const sevKey = `res_${result.status === 'NO_ADVERSE_REPORT' ? 'NO_ADVERSE' : result.status === 'DATA_UNAVAILABLE' ? 'DATA_UNAVAILABLE' : result.status.replace('_DRUG', '')}_SEV`;
+  const translatedLabel = t(labelKey) !== labelKey ? t(labelKey) : cfg.label;
+  const translatedSev = t(sevKey) !== sevKey ? t(sevKey) : cfg.severity;
 
   return (
     <div className={`mt-8 border-2 ${cfg.border} rounded-3xl overflow-hidden shadow-2xl fade-in-up`}>
@@ -94,9 +100,9 @@ function ResultCard({ result }: { result: SearchResult }) {
               Kerala Drug Control Department — Verification Result
             </div>
             <div className="text-3xl font-black flex items-center gap-3">
-              <span>{cfg.icon}</span> {cfg.label}
+              <span>{cfg.icon}</span> {translatedLabel}
             </div>
-            <div className="text-sm mt-1 opacity-90">{cfg.severity}</div>
+            <div className="text-sm mt-1 opacity-90">{translatedSev}</div>
           </div>
           {/* Official stamp visual */}
           <div className="stamp-animate flex-shrink-0">
@@ -171,6 +177,12 @@ function ResultCard({ result }: { result: SearchResult }) {
             🖨️ Print Result
           </button>
           <Link
+            href={`/report?drug=${encodeURIComponent(result.drug_name || '')}&batch=${encodeURIComponent(result.batch_number || '')}`}
+            className="pill-btn bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-5 py-2.5 text-sm font-bold"
+          >
+            🚨 {t('btn_report_this')}
+          </Link>
+          <Link
             href="/alerts"
             className="pill-btn bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-5 py-2.5 text-sm font-semibold"
           >
@@ -188,6 +200,7 @@ function ResultCard({ result }: { result: SearchResult }) {
 }
 
 export default function SearchPage() {
+  const { t } = useLang();
   const [batch, setBatch] = useState('');
   const [drug, setDrug] = useState('');
   const [loading, setLoading] = useState(false);
@@ -253,13 +266,13 @@ export default function SearchPage() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-cyan-900/40 border border-cyan-500/30 rounded-full px-4 py-1.5 text-cyan-300 text-xs font-semibold uppercase tracking-widest mb-6">
             <span className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></span>
-            Drug Verification Terminal
+            {t('search_badge')}
           </div>
           <h1 className="text-4xl font-black text-white mb-3">
-            Verify Your <span className="text-cyan-300">Medicine</span>
+            {t('search_title_1')} <span className="text-cyan-300">{t('search_title_2')}</span>
           </h1>
           <p className="text-blue-300 text-sm max-w-md mx-auto">
-            Enter the batch number from your medicine box. We&apos;ll check CDSCO and Kerala Drug Control databases instantly.
+            {t('search_subtitle')}
           </p>
         </div>
 
@@ -285,14 +298,14 @@ export default function SearchPage() {
 
             <form onSubmit={handleSearch} className="space-y-4">
               <PillInput
-                label="Batch Number"
+                label={t('label_batch')}
                 value={batch}
                 onChange={setBatch}
                 placeholder="e.g. CIP2024001, MET2024200..."
                 icon="📦"
               />
               <PillInput
-                label="Drug Name"
+                label={t('label_drug')}
                 value={drug}
                 onChange={setDrug}
                 placeholder="e.g. Paracetamol, Metformin, Azithromycin..."
@@ -331,8 +344,8 @@ export default function SearchPage() {
                   onClick={() => setShowScanner(true)}
                 >
                   <div className="text-3xl group-hover:scale-110 transition-transform">📷</div>
-                  <div>Scan Barcode / QR Code with Camera</div>
-                  <div className="text-xs opacity-60 font-normal">Supports live camera &amp; image file upload</div>
+                  <div>{t('btn_scan_camera')}</div>
+                  <div className="text-xs opacity-60 font-normal">{t('btn_scan_sub')}</div>
                 </button>
               )}
 
@@ -344,9 +357,9 @@ export default function SearchPage() {
                 {loading ? (
                   <span className="flex items-center gap-2 font-mono text-sm">
                     <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                    Querying databases...
+                    {t('btn_querying')}
                   </span>
-                ) : '🔍 Verify Medicine Now'}
+                ) : `🔍 ${t('btn_verify_now')}`}
               </button>
             </form>
 
